@@ -1,4 +1,3 @@
-"""Первичная инициализация системы (создание админа при первом запуске)."""
 
 from database import UserRepository
 from utils.logger import get_logger

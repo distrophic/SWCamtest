@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QLabel, QWidget, QVBoxLayout,
     QPushButton, QHBoxLayout, QStatusBar,
 )
-from PyQt6.QtCore import QThread
+from PyQt6.QtCore import QThread, Qt
 from auth import AuthService, Session
 from config import CAMERA
 from core.detector import PersonDetector
@@ -23,12 +23,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("SecureWatch")
         self.resize(1100, 700)
 
+        # ── Атрибуты (инициализируем ЗАРАНЕЕ, чтобы не было AttributeError)
         self.camera: CameraStream | None = None
         self.video_widget: VideoWidget | None = None
+        self.detector: PersonDetector | None = None
+        self.detector_thread: QThread | None = None
 
         self._build_ui()
         self._update_status()
         self._start_camera()
+        self._start_detector()   # ← ТЕПЕРЬ ВЫЗЫВАЕТСЯ
 
     # ── UI ─────────────────────────────────────────────────────
     def _build_ui(self) -> None:
@@ -51,6 +55,10 @@ class MainWindow(QMainWindow):
         self.fps_label.setStyleSheet("color: #6c6; font-family: monospace;")
         header.addWidget(self.fps_label)
 
+        self.detector_label = QLabel("🧠 —")
+        self.detector_label.setStyleSheet("color: #888; font-family: monospace;")
+        header.addWidget(self.detector_label)
+
         self.connection_label = QLabel("● offline")
         self.connection_label.setStyleSheet("color: #c66; font-weight: bold;")
         header.addWidget(self.connection_label)
@@ -70,7 +78,6 @@ class MainWindow(QMainWindow):
 
     # ── Камера ─────────────────────────────────────────────────
     def _start_camera(self) -> None:
-        """Запускает поток с веб-камеры."""
         self.camera = CameraStream(CAMERA)
 
         self.camera.frame_ready.connect(self.video_widget.update_frame)
@@ -96,16 +103,18 @@ class MainWindow(QMainWindow):
         # Загружаем модель, как только поток стартанул
         self.detector_thread.started.connect(self.detector.load)
 
-        # Сигналы
-        self.detector.ready.connect(
-            lambda: self.statusBar().showMessage("✅ Детектор готов", 3000)
-        )
-        self.detector.detections_ready.connect(self._on_detections)
-        self.detector.error.connect(self._on_camera_error)
+        # Сигналы состояния
+        self.detector.ready.connect(self._on_detector_ready)
+        self.detector.error.connect(self._on_detector_error)
 
-        # Камера → детектор (Qt сам сделает QueuedConnection между потоками)
+        # ── Пайплайн детекции ──
+        # Камера → detector.process (через очередь между потоками)
         if self.camera is not None:
-            self.camera.frame_ready.connect(self.detector.process)
+            self.camera.frame_ready.connect(
+                self.detector.process, Qt.ConnectionType.QueuedConnection
+            )
+        # Детектор → VideoWidget.set_detections (рисует боксы)
+        self.detector.detections_ready.connect(self.video_widget.set_detections)
 
         self.detector_thread.start()
         logger.info("Поток детектора запущен.")
@@ -116,8 +125,9 @@ class MainWindow(QMainWindow):
             self.detector_thread.wait(2000)
             self.detector_thread = None
             self.detector = None
+            logger.info("Поток детектора остановлен.")
 
-    # ── Слоты для сигналов камеры ──────────────────────────────
+    # ── Слоты для сигналов ──────────────────────────────
     def _on_fps(self, fps: float) -> None:
         self.fps_label.setText(f"FPS: {fps:5.1f}")
 
@@ -142,6 +152,22 @@ class MainWindow(QMainWindow):
         logger.warning(f"Камера: {msg}")
         self.statusBar().showMessage(f"⚠ {msg}", 5000)
 
+    def _on_detector_ready(self) -> None:
+        logger.info("Детектор готов к работе.")
+        self.detector_label.setText("🧠 ready")
+        self.detector_label.setStyleSheet(
+            "color: #6c6; font-family: monospace;"
+        )
+        self.statusBar().showMessage("✅ Детектор готов", 3000)
+
+    def _on_detector_error(self, msg: str) -> None:
+        logger.error(f"Детектор: {msg}")
+        self.detector_label.setText("🧠 error")
+        self.detector_label.setStyleSheet(
+            "color: #c66; font-family: monospace;"
+        )
+        self.statusBar().showMessage(f"⚠ Детектор: {msg}", 5000)
+
     # ── Прочее ─────────────────────────────────────────────────
     def _update_status(self) -> None:
         user = Session.current_user()
@@ -150,11 +176,13 @@ class MainWindow(QMainWindow):
         )
 
     def _on_logout(self) -> None:
+        self._stop_detector()
         self._stop_camera()
         AuthService.logout()
         self.close()
 
     def closeEvent(self, event):  # noqa: N802
-        """Корректно останавливаем камеру при закрытии окна."""
+        """Корректно останавливаем всё при закрытии окна."""
+        self._stop_detector()
         self._stop_camera()
         super().closeEvent(event)
