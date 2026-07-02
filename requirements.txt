@@ -1,0 +1,27 @@
+# === CORE ===
+opencv-python==4.10.0.84
+numpy==1.26.4
+Pillow==10.4.0
+
+# === AI / Detection ===
+ultralytics==8.3.40
+torch==2.5.1
+torchvision==0.20.1
+
+# === GUI ===
+PyQt6==6.7.1
+PyQt6-Qt6==6.7.3
+
+# === Database ===
+SQLAlchemy==2.0.36
+
+# === Auth / Security ===
+bcrypt==4.2.1
+
+# === Logging / Utils ===
+python-dotenv==1.0.1
+colorlog==6.9.0
+
+# === Testing ===
+pytest==8.3.4
+pytest-qt==4.4.0

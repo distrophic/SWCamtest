@@ -1,0 +1,43 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# ===== Виртуальное окружение =====
+.venv/
+venv/
+env/
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== Проект =====
+# База данных (у каждого своя)
+data/securewatch.db
+data/securewatch.db-journal
+
+# Записи с камер (тяжёлые видосы)
+data/recordings/*
+!data/recordings/.gitkeep
+
+# Логи
+logs/*.log
+
+# Сломанные бэкапы
+*.broken
+
+# ===== ML модели (тяжёлые, качаются отдельно) =====
+*.pt
+*.onnx
+*.pth
+
+# ===== ОС =====
+.DS_Store
+Thumbs.db
+desktop.ini
+EOF
