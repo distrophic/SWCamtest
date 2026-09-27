@@ -24,6 +24,7 @@ import cv2
 import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
+from core.cv_lock import OPENCV
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -103,8 +104,14 @@ class Recorder(QObject):
         if self._writer is not None:
             self._close_writer()
 
+    @pyqtSlot()
+    def release_writer(self) -> None:
+        """Закрывает текущий файл, не выключая ручной или автоматический режим."""
+        if self._writer is not None:
+            self._close_writer()
+
     # ── Слоты пайплайна ───────────────────────────────────────
-    @pyqtSlot(np.ndarray)
+    @pyqtSlot(object)
     def on_frame(self, frame: np.ndarray) -> None:
         if frame is None or frame.size == 0:
             return
@@ -171,7 +178,8 @@ class Recorder(QObject):
         filepath = day_dir / filename
 
         fourcc = cv2.VideoWriter_fourcc(*self.FOURCC)
-        writer = cv2.VideoWriter(str(filepath), fourcc, fps, (w, h))
+        with OPENCV:
+            writer = cv2.VideoWriter(str(filepath), fourcc, fps, (w, h))
 
         if not writer.isOpened():
             msg = f"Не удалось открыть VideoWriter для {filepath}"
@@ -189,7 +197,8 @@ class Recorder(QObject):
     def _close_writer(self) -> None:
         if self._writer is None:
             return
-        self._writer.release()
+        with OPENCV:
+            self._writer.release()
         duration = time.time() - self._clip_start_ts
 
         path_str = str(self._current_file) if self._current_file else "?"

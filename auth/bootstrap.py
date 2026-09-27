@@ -24,10 +24,8 @@ def ensure_first_admin() -> bool:
     )
 
     logger.warning("=" * 60)
-    logger.warning("⚠  СОЗДАН ДЕФОЛТНЫЙ АДМИНИСТРАТОР")
-    logger.warning(f"   Логин:  {DEFAULT_ADMIN_USERNAME}")
-    logger.warning(f"   Пароль: {DEFAULT_ADMIN_PASSWORD}")
-    logger.warning("⚠  СМЕНИТЕ ПАРОЛЬ ПОСЛЕ ПЕРВОГО ВХОДА!")
+    logger.warning("Создан администратор по умолчанию.")
+    logger.warning("Смените пароль при первом входе. Пароль в лог не записывается.")
     logger.warning("=" * 60)
 
     return True

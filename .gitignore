@@ -13,6 +13,8 @@ env/
 # ===== IDE =====
 .vscode/
 .idea/
+.pytest_tmp/
+.pytest_cache/
 *.swp
 *.swo
 
@@ -25,8 +27,15 @@ data/securewatch.db-journal
 data/recordings/*
 !data/recordings/.gitkeep
 
+# Снимки с камеры
+data/snapshots/*
+!data/snapshots/.gitkeep
+
 # Логи
 logs/*.log
+
+# Секреты
+.env
 
 # Сломанные бэкапы
 *.broken
@@ -40,4 +49,3 @@ logs/*.log
 .DS_Store
 Thumbs.db
 desktop.ini
-EOF

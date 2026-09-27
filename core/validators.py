@@ -60,6 +60,9 @@ class Validators:
         if source.isdigit():
             return True
 
+        if source.strip().lower() in {"synthetic", "simulator"}:
+            return True
+
         if source.startswith(('rtsp://', 'http://', 'https://')):
             return len(source) > 10
 
@@ -67,6 +70,16 @@ class Validators:
             return Path(source).suffix.lower() in {'.mp4', '.avi', '.mkv', '.mov'}
         except (ValueError, OSError):
             return False
+
+    @staticmethod
+    def parse_camera_source(source: int | str) -> int | str:
+        """Цифровую строку превращает в индекс устройства, остальное оставляет строкой."""
+        if isinstance(source, int):
+            return source
+        text = source.strip()
+        if text.isdigit():
+            return int(text)
+        return text
 
     @staticmethod
     def validate_resolution(width: int, height: int) -> bool:

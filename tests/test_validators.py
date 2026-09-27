@@ -1,84 +1,124 @@
-"""Тесты валидаторов. Запуск: python -m tests.test_validators"""
+"""Тесты валидаторов. Запуск: pytest tests/test_validators.py"""
+
+import pytest
 
 from core.validators import Validators
 
 
-def run_tests():
-    tests = [
-        # username
-        (Validators.validate_username, ("admin",), True),
-        (Validators.validate_username, ("ab",), False),
-        (Validators.validate_username, ("user name",), False),
-        (Validators.validate_username, ("админ",), False),
-        (Validators.validate_username, ("user_01",), True),
-
-        # password
-        (Validators.validate_password, ("qwerty12",), True),
-        (Validators.validate_password, ("12345678",), False),
-        (Validators.validate_password, ("password",), False),
-        (Validators.validate_password, ("qwe1",), False),
-        (Validators.validate_password, ("MyPass2024",), True),
-
-        # email
-        (Validators.validate_email, ("user@mail.com",), True),
-        (Validators.validate_email, ("user@",), False),
-        (Validators.validate_email, ("просто текст",), False),
-        (Validators.validate_email, ("a.b@c.co.uk",), True),
-
-        # ip
-        (Validators.validate_ip, ("192.168.1.1",), True),
-        (Validators.validate_ip, ("999.0.0.1",), False),
-        (Validators.validate_ip, ("192.168.1",), False),
-        (Validators.validate_ip, ("hello",), False),
-
-        # port
-        (Validators.validate_port, (80,), True),
-        (Validators.validate_port, (554,), True),
-        (Validators.validate_port, (0,), False),
-        (Validators.validate_port, (70000,), False),
-        (Validators.validate_port, ("8080",), True),
-
-        # camera_source
-        (Validators.validate_camera_source, (0,), True),
-        (Validators.validate_camera_source, ("rtsp://192.168.1.10:554/stream",), True),
-        (Validators.validate_camera_source, ("/tmp/video.mp4",), True),
-        (Validators.validate_camera_source, ("просто текст",), False),
-        (Validators.validate_camera_source, (-1,), False),
-
-        # resolution
-        (Validators.validate_resolution, (1280, 720), True),
-        (Validators.validate_resolution, (1920, 1080), True),
-        (Validators.validate_resolution, (0, 0), False),
-        (Validators.validate_resolution, (10000, 10000), False),
-
-        # fps
-        (Validators.validate_fps, (30,), True),
-        (Validators.validate_fps, (60,), True),
-        (Validators.validate_fps, (0,), False),
-        (Validators.validate_fps, (200,), False),
-    ]
-
-    print("=" * 60)
-    print("🧪 ТЕСТЫ ВАЛИДАТОРОВ")
-    print("=" * 60)
-
-    passed = failed = 0
-    for method, args, expected in tests:
-        result = method(*args)
-        ok = result == expected
-        status = "✅" if ok else "❌"
-        passed += ok
-        failed += not ok
-
-        args_str = ", ".join(repr(a) for a in args)
-        print(f"{status} {method.__name__}({args_str}) → {result}")
-
-    print("=" * 60)
-    print(f"📊 {passed} пройдено, {failed} провалено")
-    print("=" * 60)
-
-    return failed == 0
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("admin", True),
+        ("ab", False),
+        ("user name", False),
+        ("админ", False),
+        ("user_01", True),
+    ],
+)
+def test_username(value, expected):
+    assert Validators.validate_username(value) is expected
 
 
-if __name__ == "__main__":
-    exit(0 if run_tests() else 1)
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("qwerty12", True),
+        ("12345678", False),
+        ("password", False),
+        ("qwe1", False),
+        ("MyPass2024", True),
+    ],
+)
+def test_password(value, expected):
+    assert Validators.validate_password(value) is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("user@mail.com", True),
+        ("user@", False),
+        ("просто текст", False),
+        ("a.b@c.co.uk", True),
+    ],
+)
+def test_email(value, expected):
+    assert Validators.validate_email(value) is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("192.168.1.1", True),
+        ("999.0.0.1", False),
+        ("192.168.1", False),
+        ("hello", False),
+    ],
+)
+def test_ip(value, expected):
+    assert Validators.validate_ip(value) is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (80, True),
+        (554, True),
+        (0, False),
+        (70000, False),
+        ("8080", True),
+    ],
+)
+def test_port(value, expected):
+    assert Validators.validate_port(value) is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (0, True),
+        ("rtsp://192.168.1.10:554/stream", True),
+        ("http://camera.local/stream", True),
+        ("https://example.com/video.mjpeg", True),
+        ("synthetic", True),
+        ("simulator", True),
+        ("/tmp/video.mp4", True),
+        ("просто текст", False),
+        (-1, False),
+    ],
+)
+def test_camera_source(value, expected):
+    assert Validators.validate_camera_source(value) is expected
+
+
+def test_parse_camera_source():
+    assert Validators.parse_camera_source("0") == 0
+    assert Validators.parse_camera_source(1) == 1
+    assert Validators.parse_camera_source("rtsp://host/stream") == "rtsp://host/stream"
+    assert Validators.parse_camera_source(" synthetic ") == "synthetic"
+
+
+@pytest.mark.parametrize(
+    ("width", "height", "expected"),
+    [
+        (1280, 720, True),
+        (1920, 1080, True),
+        (0, 0, False),
+        (10000, 10000, False),
+    ],
+)
+def test_resolution(width, height, expected):
+    assert Validators.validate_resolution(width, height) is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (30, True),
+        (60, True),
+        (0, False),
+        (200, False),
+    ],
+)
+def test_fps(value, expected):
+    assert Validators.validate_fps(value) is expected

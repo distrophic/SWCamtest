@@ -16,6 +16,7 @@ class LoginWindow(QWidget):
     """Окно логина. После успешного входа эмитит signal `logged_in`."""
 
     logged_in = pyqtSignal()
+    closed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -78,3 +79,7 @@ class LoginWindow(QWidget):
 
         self.logged_in.emit()
         self.close()
+
+    def closeEvent(self, event):  # noqa: N802
+        self.closed.emit()
+        super().closeEvent(event)

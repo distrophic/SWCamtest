@@ -16,6 +16,7 @@ PyQt6-Qt6==6.7.3
 SQLAlchemy==2.0.36
 
 # === Auth / Security ===
+# Хеши считаются библиотекой bcrypt напрямую, passlib не используется.
 bcrypt==4.2.1
 
 # === Logging / Utils ===

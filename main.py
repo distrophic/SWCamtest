@@ -2,6 +2,10 @@
 
 import sys
 
+from core.runtime import configure_process
+
+configure_process()
+
 from auth import ensure_first_admin
 from database import init_db
 from gui.app import SecureWatchApp
